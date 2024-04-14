@@ -12,6 +12,9 @@ import {
     StandardMaterial,
     Texture,
 } from "@babylonjs/core";
+import MapComponent from "./components/mapComponent";
+import Navbar from "./components/navbar";
+import Search from "./components/search";
 
 function App() {
     const mapContainer = useRef<HTMLDivElement | null>(null);
@@ -92,7 +95,7 @@ function App() {
         );
 
         // Default intensity is 1. Let's dim the light a small amount
-        light.intensity = 0.7;
+        light.intensity = 0.8;
 
         // Our built-in 'box' shape.
         box = MeshBuilder.CreateBox("box", { size: 5 }, scene);
@@ -111,7 +114,6 @@ function App() {
     const onRender = (scene: Scene) => {
         if (box !== undefined) {
             const deltaTimeInMillis = scene.getEngine().getDeltaTime();
-
             const rpm = 10;
             box.rotation.y +=
                 (rpm / 60) * Math.PI * 2 * (deltaTimeInMillis / 1000);
@@ -119,18 +121,20 @@ function App() {
     };
 
     return (
-        <div className='flex  items-center justify-center w-full gap-12'>
-            <div className='absolute top-0 left-0 px-2 py-3  m-3 font-mono rounded-sm text-white bg-gray-700'>
-                Longitude: {lng.current} | Latitude: {lat.current} | Zoom:{" "}
-                {zoom.current}
-            </div>
-            <div className='h-[600px] w-[1284px]' ref={mapContainer}></div>
-            <button onClick={captureMap}> Capture Map as an Image</button>
-            {mapImage && (
-                <div>
-                    <img src={mapImage} alt='map' />
+        <div className='flex flex-col items-center justify-center gap-12'>
+            <Navbar />
+            <Search />
+            <div className='h-[600px] w-[1284px]' ref={mapContainer}>
+                <div className='relative'>
+                    <div className='absolute top-0 left-0 px-2 py-3 m-3 font-mono text-white rounded-sm'></div>
+                    <div className=' top-2 left-2 absolute flex items-center h-12 px-4 py-2 bg-gray-700'>
+                        Longitude: {lng.current} | Latitude: {lat.current} |
+                        Zoom: {zoom.current}
+                    </div>
                 </div>
-            )}
+            </div>
+            {/* <MapComponent /> */}
+            <button onClick={captureMap}> Capture Map as an Image</button>
             <SceneComponent
                 antialias={true}
                 onSceneReady={onSceneReady}

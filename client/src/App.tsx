@@ -1,5 +1,5 @@
 import "./App.css";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import { baseUrl, mapStyle, mapboxPublicToken } from "./utils/config";
 import SceneComponent from "./components/sceneComponent";
@@ -28,13 +28,13 @@ function App() {
 
     const [mapImage, setMapImage] = useState<string | null>(null);
     const [isStaticImageLoaded, setStaticImageLoaded] = useState<boolean>(true);
-    const [isMapDrag, setIsMapDrag] = useState(false);
+
     const [error, setError] = useState<string | null>(null);
 
     const mapContainer = useRef<HTMLDivElement | null>(null);
     const map = useRef<mapboxgl.Map | null>(null);
 
-    let box: Mesh;
+    let box: Mesh | null = null;
 
     const onSceneReady = (scene: Scene) => {
         // Creates and positions a free camera (non-mesh)
@@ -75,10 +75,12 @@ function App() {
         if (box !== undefined) {
             const deltaTimeInMillis = scene.getEngine().getDeltaTime();
             const rpm = 3;
-            box.rotation.y +=
-                (rpm / 60) * Math.PI * 2 * (deltaTimeInMillis / 1000);
-            box.rotation.x +=
-                (rpm / 60) * Math.PI * 2 * (deltaTimeInMillis / 1000);
+            if (box) {
+                box.rotation.y +=
+                    (rpm / 60) * Math.PI * 2 * (deltaTimeInMillis / 1000);
+                box.rotation.x +=
+                    (rpm / 60) * Math.PI * 2 * (deltaTimeInMillis / 1000);
+            }
         }
     };
 
@@ -122,11 +124,11 @@ function App() {
     mapboxgl.accessToken = mapboxPublicToken;
 
     const onDragStart = () => {
-        setIsMapDrag(true);
+        // setIsMapDrag(true);
     };
 
     const onDragEnd = () => {
-        setIsMapDrag(false);
+        // setIsMapDrag(false);
         const center = map.current?.getCenter();
         const zoomLevel = map.current?.getZoom();
 
@@ -202,7 +204,7 @@ function App() {
             </button>
             {error && <p className='text-red-600'>{error}</p>}
             <SceneComponent
-                box={box || {}}
+                box={box}
                 mapImage={mapImage}
                 antialias={true}
                 onSceneReady={onSceneReady}

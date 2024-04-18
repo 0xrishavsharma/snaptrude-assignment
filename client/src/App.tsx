@@ -1,6 +1,10 @@
 import "./App.css";
-import { useRef, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import mapboxgl from "mapbox-gl";
+import { baseUrl, mapStyle, mapboxPublicToken } from "./utils/config";
 import SceneComponent from "./components/sceneComponent";
+import MapComponent from "./components/mapComponent";
+import { ImSpinner8 } from "react-icons/im";
 import {
     FreeCamera,
     Vector3,
@@ -11,20 +15,21 @@ import {
     StandardMaterial,
     Texture,
 } from "@babylonjs/core";
-import MapComponent from "./components/mapComponent";
-import Navbar from "./components/navbar";
-import mapboxgl from "mapbox-gl";
 
 function App() {
-    const accessToken = import.meta.env.VITE_APP_MAPBOX_ACCESS_TOKEN;
-    const mapStyle = "mapbox://styles/mapbox/streets-v11";
-
     const [lng, setLng] = useState(-70.9);
     const [lat, setLat] = useState(42.35);
     const [zoom, setZoom] = useState(9);
-    const [mapWidth, setMapWidth] = useState(300);
-    const [mapHeight, setMapHeight] = useState(200);
+
+    // Coordinates state to display coordinates on the map
+    const [displayLng, setDisplayLng] = useState(-70.9);
+    const [displayLat, setDisplayLat] = useState(42.35);
+    const [displayZoom, setDisplayZoom] = useState(10);
+
     const [mapImage, setMapImage] = useState<string | null>(null);
+    const [isStaticImageLoaded, setStaticImageLoaded] = useState<boolean>(true);
+    const [isMapDrag, setIsMapDrag] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const mapContainer = useRef<HTMLDivElement | null>(null);
     const map = useRef<mapboxgl.Map | null>(null);
@@ -69,23 +74,75 @@ function App() {
     const onRender = (scene: Scene) => {
         if (box !== undefined) {
             const deltaTimeInMillis = scene.getEngine().getDeltaTime();
-            const rpm = 10;
+            const rpm = 3;
             box.rotation.y +=
+                (rpm / 60) * Math.PI * 2 * (deltaTimeInMillis / 1000);
+            box.rotation.x +=
                 (rpm / 60) * Math.PI * 2 * (deltaTimeInMillis / 1000);
         }
     };
 
     const captureMap = async () => {
-        const res = await fetch(
-            `https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/${lng},${lat},${zoom},0/${mapWidth}x${mapHeight}?access_token=${
-                import.meta.env.VITE_APP_MAPBOX_ACCESS_TOKEN_WITH_STATIC_IMAGE
-            }`
-        );
-        const blob = await res.blob();
-        setMapImage(URL.createObjectURL(blob));
+        setStaticImageLoaded(false);
+        setError(null);
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 seconds timeout
+        try {
+            const res = await fetch(
+                `${baseUrl}/api/static-map?lng=${lng}&lat=${lat}&zoom=${zoom}`,
+                { signal: controller.signal }
+            );
+
+            if (!res.ok) {
+                throw new Error(`HTTP error! status: ${res.status}`);
+            }
+            console.log("res", res);
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            setMapImage(url);
+
+            setStaticImageLoaded(true);
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                if (error.name === "AbortError") {
+                    setError("The request took too long, please try again.");
+                    setStaticImageLoaded(true);
+                } else {
+                    setError("An error occurred while fetching the map.");
+                    console.log("error", error);
+                    setStaticImageLoaded(true);
+                }
+            }
+        } finally {
+            clearTimeout(timeoutId);
+        }
     };
 
-    mapboxgl.accessToken = accessToken;
+    mapboxgl.accessToken = mapboxPublicToken;
+
+    const onDragStart = () => {
+        setIsMapDrag(true);
+    };
+
+    const onDragEnd = () => {
+        setIsMapDrag(false);
+        const center = map.current?.getCenter();
+        const zoomLevel = map.current?.getZoom();
+
+        setLng(parseFloat(center?.lng.toFixed(4) || "0"));
+        setLat(parseFloat(center?.lat.toFixed(4) || "0"));
+        setZoom(parseFloat(zoomLevel?.toFixed(2) || "0"));
+    };
+
+    const onMove = () => {
+        const center = map.current?.getCenter();
+        const zoomLevel = map.current?.getZoom();
+
+        setDisplayLng(parseFloat(center?.lng.toFixed(4) || "0"));
+        setDisplayLat(parseFloat(center?.lat.toFixed(4) || "0"));
+        setDisplayZoom(parseFloat(zoomLevel?.toFixed(2) || "0"));
+    };
 
     useEffect(() => {
         if (mapContainer.current) {
@@ -96,34 +153,57 @@ function App() {
                 zoom: zoom,
             });
 
-            map.current.on("move", () => {
-                const center = map.current?.getCenter();
-                const zoomLevel = map.current?.getZoom();
-
-                setLng(parseFloat(center?.lng.toFixed(4) || "0"));
-                setLat(parseFloat(center?.lat.toFixed(4) || "0"));
-                setZoom(parseFloat(zoomLevel?.toFixed(2) || "0"));
-            });
+            // Register the event handlers
+            map.current.on("dragstart", onDragStart);
+            map.current.on("dragend", onDragEnd);
+            map.current.on("move", onMove);
         }
 
-        return () => map.current?.remove();
+        // Clean up the event handlers when the component unmounts
+        return () => {
+            map.current?.off("dragstart", onDragStart);
+            map.current?.off("dragend", onDragEnd);
+            map.current?.off("move", onMove);
+            map.current?.remove();
+        };
     }, []);
+
+    useEffect(() => {
+        if (map.current) {
+            map.current.setCenter([lng, lat]);
+            map.current.setZoom(zoom);
+        }
+    }, [lng, lat, zoom]);
 
     return (
         <div className='flex flex-col items-center justify-center gap-12'>
-            <Navbar />
             <MapComponent
                 map={map}
                 mapContainer={mapContainer}
-                lng={lng}
-                lat={lat}
-                zoom={zoom}
                 setLng={setLng}
                 setLat={setLat}
                 setZoom={setZoom}
+                displayLng={displayLng}
+                displayLat={displayLat}
+                displayZoom={displayZoom}
+                setDisplayLng={setDisplayLng}
+                setDisplayLat={setDisplayLat}
+                setDisplayZoom={setDisplayZoom}
             />
-            <button onClick={captureMap}> Capture Map as an Image</button>
+            <button
+                className='text-white bg-black border border-white rounded-md'
+                onClick={captureMap}
+            >
+                {isStaticImageLoaded ? (
+                    "Capture Map"
+                ) : (
+                    <ImSpinner8 className='animate-spin text-xl font-bold duration-500' />
+                )}
+            </button>
+            {error && <p className='text-red-600'>{error}</p>}
             <SceneComponent
+                box={box || {}}
+                mapImage={mapImage}
                 antialias={true}
                 onSceneReady={onSceneReady}
                 engineOptions={{}}

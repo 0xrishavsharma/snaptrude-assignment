@@ -1,7 +1,17 @@
-import { useEffect, useRef } from "react";
-import { Engine, Scene, EngineOptions, SceneOptions } from "@babylonjs/core";
+import React, { useEffect, useRef, useState } from "react";
+import {
+    Engine,
+    Scene,
+    EngineOptions,
+    SceneOptions,
+    StandardMaterial,
+    Texture,
+    Mesh,
+} from "@babylonjs/core";
 
 const SceneComponent = ({
+    box,
+    mapImage,
     antialias,
     engineOptions,
     adaptToDeviceRatio,
@@ -10,15 +20,18 @@ const SceneComponent = ({
     onSceneReady,
     ...rest
 }: {
+    box: Mesh | null;
+    mapImage: string | null;
     antialias: boolean;
     engineOptions: EngineOptions;
     adaptToDeviceRatio: boolean;
-    sceneOptions: SceneOptions; // Replace 'any' with the specific type for sceneOptions
+    sceneOptions: SceneOptions;
     onRender?: (scene: Scene) => void;
     onSceneReady: (scene: Scene) => void;
     // [key: string]: any;
 }) => {
     const reactCanvas = useRef(null);
+    const [scene, setScene] = useState<Scene | null>(null);
 
     // set up basic engine and scene
     useEffect(() => {
@@ -32,33 +45,38 @@ const SceneComponent = ({
             engineOptions,
             adaptToDeviceRatio
         );
-        const scene = new Scene(engine, sceneOptions);
-        if (scene.isReady()) {
-            onSceneReady(scene);
-        } else {
-            scene.onReadyObservable.addOnce((scene) => onSceneReady(scene));
-        }
+        const localScene = new Scene(engine, sceneOptions);
+        setScene(localScene);
+        if (localScene) {
+            if (localScene.isReady()) {
+                onSceneReady(localScene);
+            } else {
+                localScene.onReadyObservable.addOnce((scene) =>
+                    onSceneReady(scene)
+                );
+            }
 
-        engine.runRenderLoop(() => {
-            if (typeof onRender === "function") onRender(scene);
-            scene.render();
-        });
+            engine.runRenderLoop(() => {
+                if (typeof onRender === "function") onRender(localScene);
+                localScene.render();
+            });
 
-        const resize = () => {
-            scene.getEngine().resize();
-        };
-
-        if (window) {
-            window.addEventListener("resize", resize);
-        }
-
-        return () => {
-            scene.getEngine().dispose();
+            const resize = () => {
+                localScene.getEngine().resize();
+            };
 
             if (window) {
-                window.removeEventListener("resize", resize);
+                window.addEventListener("resize", resize);
             }
-        };
+
+            return () => {
+                localScene.getEngine().dispose();
+
+                if (window) {
+                    window.removeEventListener("resize", resize);
+                }
+            };
+        }
     }, [
         antialias,
         engineOptions,
@@ -68,7 +86,21 @@ const SceneComponent = ({
         onSceneReady,
     ]);
 
-    return <canvas ref={reactCanvas} {...rest} />;
+    useEffect(() => {
+        if (box && mapImage && scene) {
+            const material = new StandardMaterial("material", scene);
+            material.diffuseTexture = new Texture(mapImage, scene);
+            box.material = material;
+        }
+    }, [mapImage, scene]);
+
+    return (
+        <canvas
+            ref={reactCanvas}
+            {...rest}
+            className='flex items-center justify-center w-full m-auto'
+        />
+    );
 };
 
 export default SceneComponent;

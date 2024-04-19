@@ -1,6 +1,6 @@
 export const baseUrl =
     import.meta.env.MODE === "production"
-        ? "https://yourdomain.com"
+        ? import.meta.env.VITE_APP_BASE_URL
         : "http://localhost:8000";
 
 export const mapboxPublicToken = import.meta.env.VITE_APP_MAPBOX_ACCESS_TOKEN;

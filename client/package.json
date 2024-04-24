@@ -10,14 +10,9 @@
     "preview": "vite preview",
     "prepare": "husky install"
   },
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged"
-    }
-  },
   "lint-staged": {
-    "*": "prettier --write"
-  },
+  "*.{js,jsx,ts,tsx,json,css,md}": "prettier --write"
+},
   "dependencies": {
     "dotenv": "^16.4.5",
     "lodash": "^4.17.21",

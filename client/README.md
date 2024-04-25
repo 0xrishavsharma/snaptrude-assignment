@@ -1,30 +1,47 @@
-# React + TypeScript + Vite
+# Snaptrude Assignment
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+An assignment project for the hiring process of Snaptrude's Frontend developer role
 
-Currently, two official plugins are available:
+## Installation
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Usage of yarn is recommended for this project. If you don't have yarn installed, you can install it by running the following command:
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
-
-- Configure the top-level `parserOptions` property like this:
-
-```js
-export default {
-  // other rules...
-  parserOptions: {
-    ecmaVersion: "latest",
-    sourceType: "module",
-    project: ["./tsconfig.json", "./tsconfig.node.json"],
-    tsconfigRootDir: __dirname,
-  },
-}
+```bash
+npm install -g yarn
 ```
 
-- Replace `plugin:@typescript-eslint/recommended` to `plugin:@typescript-eslint/recommended-type-checked` or `plugin:@typescript-eslint/strict-type-checked`
-- Optionally add `plugin:@typescript-eslint/stylistic-type-checked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and add `plugin:react/recommended` & `plugin:react/jsx-runtime` to the `extends` list
+After installing yarn, you can install the project dependencies by running the following command:
+
+```bash
+yarn install
+```
+
+**Note**: You won't be able to run the project using npm. If you try to run the project using npm, you'll get an error. This project is configured to run with yarn.
+
+## Development
+
+To start the development server, run the following command:
+
+```bash
+yarn dev
+```
+
+This will start the development server at [http://localhost:5173](http://localhost:5173)
+
+## Production
+
+To build the project for production, run the following command:
+
+```bash
+yarn build
+```
+
+This will create a `dist` directory in the project root. You can serve the files in this directory using any static file server.
+
+## Node Version Requirement
+
+This project requires a specific version of Node.js. If you have Node Version Manager (NVM) installed, you can ensure you're using the correct version by running the following command in the project directory:
+
+```bash
+nvm use
+```

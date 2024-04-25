@@ -10,6 +10,12 @@
     "preview": "vite preview",
     "prepare": "husky install"
   },
+  "engines": {
+    "node": ">=16",
+    "npm":"NPM_IS_NOT_ALLOWED_PLEASE_USE_YARN",
+    "yarn": ">=1.22"
+  },
+
   "lint-staged": {
   "*.{js,jsx,ts,tsx,json,css,md}": "prettier --write"
 },
